@@ -6,9 +6,12 @@ from telegram.ext import Dispatcher, MessageHandler, filters
 
 app = Flask(__name__)
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+# توکن رباتت
+BOT_TOKEN = "8236020654:AAEpoQaAie7VvRGRaWVqaY0pi4L3BOrZMT0"
+CHANNEL_ID = "@gamerenter_channel"  # آیدی کانال برای چک عضویت
+
+# کلید API برای Shazam (RapidAPI)
 SHAZAM_API_KEY = os.getenv("SHAZAM_API_KEY")
-CHANNEL_ID = "@gamerenter_channel"
 
 bot = Bot(token=BOT_TOKEN)
 dispatcher = Dispatcher(bot, None, workers=0)
