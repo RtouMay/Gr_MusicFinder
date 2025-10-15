@@ -2,20 +2,18 @@ import os
 import requests
 from flask import Flask, request
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Dispatcher, MessageHandler, CommandHandler, filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 app = Flask(__name__)
 
-# گرفتن توکن و کلید API از محیط اجرا
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 SHAZAM_API_KEY = os.getenv("SHAZAM_API_KEY")
 CHANNEL_ID = "@gamerenterchannel"
 
-# ساخت ربات و دیسپچر
-bot = Bot(token=BOT_TOKEN)
-dispatcher = Dispatcher(bot, None, workers=0)
+updater = Updater(token=BOT_TOKEN, use_context=True)
+dispatcher = updater.dispatcher
+bot = updater.bot
 
-# چک عضویت در کانال
 def check_membership(user_id):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember?chat_id={CHANNEL_ID}&user_id={user_id}"
     try:
@@ -25,8 +23,7 @@ def check_membership(user_id):
     except:
         return False
 
-# هندلر /start
-def handle_start(update: Update, context):
+def handle_start(update, context):
     user_id = update.effective_user.id
     if not check_membership(user_id):
         btn = InlineKeyboardMarkup([[InlineKeyboardButton("عضویت در کانال", url="https://t.me/gamerenterchannel")]])
@@ -35,10 +32,8 @@ def handle_start(update: Update, context):
             reply_markup=btn
         )
         return
-
     update.message.reply_text("✅ حالا لطفاً لینک، ویدیو یا ویس مربوط به آهنگ رو بفرستید تا اسم آهنگ و لینک پخش واستون ارسال بشه 🎶")
 
-# تشخیص آهنگ با Shazam
 def identify_song(audio_url):
     headers = {
         "X-RapidAPI-Key": SHAZAM_API_KEY,
@@ -59,19 +54,16 @@ def identify_song(audio_url):
     except:
         return {}
 
-# هندلر ویس
-def handle_voice(update: Update, context):
+def handle_voice(update, context):
     user_id = update.effective_user.id
     if not check_membership(user_id):
         btn = InlineKeyboardMarkup([[InlineKeyboardButton("عضویت در کانال", url="https://t.me/gamerenterchannel")]])
         update.message.reply_text("برای استفاده از ربات لطفاً ابتدا عضو کانال شوید 👇", reply_markup=btn)
         return
-
     try:
         file = bot.get_file(update.message.voice.file_id)
         audio_url = file.file_path
         song = identify_song(audio_url)
-
         if song.get("title"):
             msg = f"""🎶 آهنگ پیدا شد!
 
@@ -90,11 +82,9 @@ def handle_voice(update: Update, context):
     except:
         update.message.reply_text("یه مشکلی پیش اومد موقع دریافت ویس. لطفاً دوباره امتحان کن.")
 
-# ثبت هندلرها
 dispatcher.add_handler(CommandHandler("start", handle_start))
-dispatcher.add_handler(MessageHandler(filters.VOICE, handle_voice))
+dispatcher.add_handler(MessageHandler(Filters.voice, handle_voice))
 
-# مسیر وب‌هوک
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
