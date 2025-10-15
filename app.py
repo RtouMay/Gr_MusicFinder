@@ -6,12 +6,10 @@ from telegram.ext import Dispatcher, MessageHandler, CommandHandler, filters
 
 app = Flask(__name__)
 
-# توکن ربات
-BOT_TOKEN = "8236020654:AAEpoQaAie7VvRGRaWVqaY0pi4L3BOrZMT0"
-# آیدی کانال برای اد اجباری
-CHANNEL_ID = "@gamerenterchannel"
-# کلید API برای Shazam (از طریق Environment Variable)
+# گرفتن توکن و کلید API از محیط اجرا
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 SHAZAM_API_KEY = os.getenv("SHAZAM_API_KEY")
+CHANNEL_ID = "@gamerenterchannel"
 
 bot = Bot(token=BOT_TOKEN)
 dispatcher = Dispatcher(bot, None, workers=0)
@@ -22,6 +20,19 @@ def check_membership(user_id):
     resp = requests.get(url).json()
     status = resp.get("result", {}).get("status", "")
     return status in ["member", "administrator", "creator"]
+
+# پیام خوش‌آمد بعد از /start
+def handle_start(update: Update, context):
+    user_id = update.effective_user.id
+    if not check_membership(user_id):
+        btn = InlineKeyboardMarkup([[InlineKeyboardButton("عضویت در کانال", url="https://t.me/gamerenterchannel")]])
+        update.message.reply_text(
+            "🎧 به ربات GR Music Finder خوش اومدید!\n\nلطفاً برای ادامه کار با این ربات عضو چنل زیر بشید 👇",
+            reply_markup=btn
+        )
+        return
+
+    update.message.reply_text("✅ حالا لطفاً لینک، ویدیو یا ویس مربوط به آهنگ رو بفرستید تا اسم آهنگ و لینک پخش واستون ارسال بشه 🎶")
 
 # تشخیص آهنگ با Shazam
 def identify_song(audio_url):
@@ -40,15 +51,6 @@ def identify_song(audio_url):
         "spotify": track.get("hub", {}).get("providers", [{}])[0].get("actions", [{}])[0].get("uri"),
         "image": track.get("images", {}).get("coverart")
     }
-
-# پیام خوش‌آمد بعد از /start
-def handle_start(update: Update, context):
-    btn = InlineKeyboardMarkup([[InlineKeyboardButton("عضویت در کانال", url="https://t.me/gamerenterchannel")]])
-    update.message.reply_text(
-        "🎧 به ربات GR Music Finder خوش اومدید!\n\nلطفاً برای ادامه کار با این ربات عضو چنل زیر بشید 👇",
-        reply_markup=btn
-    )
-    update.message.reply_text("✅ حالا لطفاً لینک، ویدیو یا ویس مربوط به آهنگ رو بفرستید تا اسم آهنگ و لینک پخش واستون ارسال بشه 🎶")
 
 # پاسخ به ویس
 def handle_voice(update: Update, context):
