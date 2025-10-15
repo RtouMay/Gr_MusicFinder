@@ -11,17 +11,21 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 SHAZAM_API_KEY = os.getenv("SHAZAM_API_KEY")
 CHANNEL_ID = "@gamerenterchannel"
 
+# ساخت ربات و دیسپچر
 bot = Bot(token=BOT_TOKEN)
 dispatcher = Dispatcher(bot, None, workers=0)
 
 # چک عضویت در کانال
 def check_membership(user_id):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember?chat_id={CHANNEL_ID}&user_id={user_id}"
-    resp = requests.get(url).json()
-    status = resp.get("result", {}).get("status", "")
-    return status in ["member", "administrator", "creator"]
+    try:
+        resp = requests.get(url).json()
+        status = resp.get("result", {}).get("status", "")
+        return status in ["member", "administrator", "creator"]
+    except:
+        return False
 
-# پیام خوش‌آمد بعد از /start
+# هندلر /start
 def handle_start(update: Update, context):
     user_id = update.effective_user.id
     if not check_membership(user_id):
@@ -41,18 +45,21 @@ def identify_song(audio_url):
         "X-RapidAPI-Host": "shazam.p.rapidapi.com"
     }
     params = {"url": audio_url}
-    resp = requests.get("https://shazam.p.rapidapi.com/songs/detect", headers=headers, params=params)
-    data = resp.json()
-    track = data.get("track", {})
-    return {
-        "title": track.get("title"),
-        "artist": track.get("subtitle"),
-        "youtube": track.get("hub", {}).get("actions", [{}])[0].get("uri"),
-        "spotify": track.get("hub", {}).get("providers", [{}])[0].get("actions", [{}])[0].get("uri"),
-        "image": track.get("images", {}).get("coverart")
-    }
+    try:
+        resp = requests.get("https://shazam.p.rapidapi.com/songs/detect", headers=headers, params=params)
+        data = resp.json()
+        track = data.get("track", {})
+        return {
+            "title": track.get("title"),
+            "artist": track.get("subtitle"),
+            "youtube": track.get("hub", {}).get("actions", [{}])[0].get("uri"),
+            "spotify": track.get("hub", {}).get("providers", [{}])[0].get("actions", [{}])[0].get("uri"),
+            "image": track.get("images", {}).get("coverart")
+        }
+    except:
+        return {}
 
-# پاسخ به ویس
+# هندلر ویس
 def handle_voice(update: Update, context):
     user_id = update.effective_user.id
     if not check_membership(user_id):
@@ -60,12 +67,13 @@ def handle_voice(update: Update, context):
         update.message.reply_text("برای استفاده از ربات لطفاً ابتدا عضو کانال شوید 👇", reply_markup=btn)
         return
 
-    file = bot.get_file(update.message.voice.file_id)
-    audio_url = file.file_path
-    song = identify_song(audio_url)
+    try:
+        file = bot.get_file(update.message.voice.file_id)
+        audio_url = file.file_path
+        song = identify_song(audio_url)
 
-    if song["title"]:
-        msg = f"""🎶 آهنگ پیدا شد!
+        if song.get("title"):
+            msg = f"""🎶 آهنگ پیدا شد!
 
 📌 عنوان: {song['title']}
 🎤 خواننده: {song['artist']}
@@ -76,15 +84,17 @@ def handle_voice(update: Update, context):
 به سایت Gamerenter.ir سر بزنید 👇  
 🌐 https://gamerenter.ir
 """
-        update.message.reply_photo(photo=song["image"], caption=msg)
-    else:
-        update.message.reply_text("متأسفانه نتونستم آهنگ رو تشخیص بدم 😔 لطفاً دوباره امتحان کن.")
+            update.message.reply_photo(photo=song["image"], caption=msg)
+        else:
+            update.message.reply_text("متأسفانه نتونستم آهنگ رو تشخیص بدم 😔 لطفاً دوباره امتحان کن.")
+    except:
+        update.message.reply_text("یه مشکلی پیش اومد موقع دریافت ویس. لطفاً دوباره امتحان کن.")
 
-# هندلرها
+# ثبت هندلرها
 dispatcher.add_handler(CommandHandler("start", handle_start))
 dispatcher.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
-# وب‌هوک
+# مسیر وب‌هوک
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
