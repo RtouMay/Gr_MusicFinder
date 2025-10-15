@@ -84,9 +84,14 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("یه مشکلی پیش اومد موقع دریافت ویس. لطفاً دوباره امتحان کن.")
 
+# ثبت هندلرها
 application.add_handler(CommandHandler("start", handle_start))
 application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
+# آماده‌سازی اپلیکیشن برای دریافت آپدیت
+application.initialize()
+
+# مسیر وب‌هوک
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
