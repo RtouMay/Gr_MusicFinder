@@ -12,7 +12,6 @@ CHANNEL_ID = "@gamerenterchannel"
 
 application = Application.builder().token(BOT_TOKEN).build()
 
-# چک عضویت در کانال
 async def check_membership(user_id):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember?chat_id={CHANNEL_ID}&user_id={user_id}"
     try:
@@ -22,7 +21,6 @@ async def check_membership(user_id):
     except:
         return False
 
-# هندلر /start
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_membership(user_id):
@@ -34,7 +32,6 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("✅ حالا لطفاً ویس مربوط به آهنگ رو بفرست تا اسم آهنگ و لینک پخش واست ارسال بشه 🎶")
 
-# تشخیص آهنگ با Shazam
 def identify_song(audio_url):
     headers = {
         "X-RapidAPI-Key": SHAZAM_API_KEY,
@@ -55,7 +52,6 @@ def identify_song(audio_url):
     except:
         return {}
 
-# هندلر ویس
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_membership(user_id):
@@ -84,13 +80,15 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("یه مشکلی پیش اومد موقع دریافت ویس. لطفاً دوباره امتحان کن.")
 
-# ثبت هندلرها
 application.add_handler(CommandHandler("start", handle_start))
 application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
-# مسیر وب‌هوک
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
     application.process_update(update)
     return "ok"
+
+# اجرای Flask سرور برای جلوگیری از exited early
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
