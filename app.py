@@ -22,6 +22,7 @@ async def check_membership(user_id):
         return False
 
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("✅ /start command received")
     user_id = update.effective_user.id
     if not await check_membership(user_id):
         btn = InlineKeyboardMarkup([[InlineKeyboardButton("عضویت در کانال", url="https://t.me/gamerenterchannel")]])
@@ -53,6 +54,7 @@ def identify_song(audio_url):
         return {}
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("🎧 Voice message received")
     user_id = update.effective_user.id
     if not await check_membership(user_id):
         btn = InlineKeyboardMarkup([[InlineKeyboardButton("عضویت در کانال", url="https://t.me/gamerenterchannel")]])
@@ -89,6 +91,5 @@ def webhook():
     application.process_update(update)
     return "ok"
 
-# اجرای Flask سرور برای جلوگیری از exited early
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
