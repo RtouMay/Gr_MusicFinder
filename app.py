@@ -5,18 +5,15 @@ from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
-# Flask setup
 app = Flask(__name__)
 
-# Environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 SHAZAM_API_KEY = os.getenv("SHAZAM_API_KEY")
 CHANNEL_ID = "@gamerenterchannel"
 
-# Telegram application
 application = Application.builder().token(BOT_TOKEN).build()
 
-# Check channel membership
+# چک عضویت در کانال
 async def check_membership(user_id):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember?chat_id={CHANNEL_ID}&user_id={user_id}"
     try:
@@ -26,7 +23,7 @@ async def check_membership(user_id):
     except:
         return False
 
-# /start handler
+# هندلر /start
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_membership(user_id):
@@ -38,7 +35,7 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("✅ حالا لطفاً ویس مربوط به آهنگ رو بفرست تا اسم آهنگ و لینک پخش واست ارسال بشه 🎶")
 
-# Shazam API call
+# تشخیص آهنگ با Shazam
 def identify_song(audio_url):
     headers = {
         "X-RapidAPI-Key": SHAZAM_API_KEY,
@@ -59,7 +56,7 @@ def identify_song(audio_url):
     except:
         return {}
 
-# Voice handler
+# هندلر ویس
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not await check_membership(user_id):
@@ -88,14 +85,15 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("یه مشکلی پیش اومد موقع دریافت ویس. لطفاً دوباره امتحان کن.")
 
-# Register handlers
+# ثبت هندلرها
 application.add_handler(CommandHandler("start", handle_start))
 application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
-# Initialize application (async-safe)
-asyncio.run(application.initialize())
+# آماده‌سازی اپلیکیشن برای دریافت آپدیت
+loop = asyncio.get_event_loop()
+loop.run_until_complete(application.initialize())
 
-# Webhook route
+# مسیر وب‌هوک
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
