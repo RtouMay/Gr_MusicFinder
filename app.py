@@ -93,7 +93,7 @@ def webhook():
     async def handle():
         await application.process_update(update)
 
-    asyncio.run(handle())
+    asyncio.get_event_loop().create_task(handle())
     return "ok"
 
 if __name__ == "__main__":
