@@ -1,5 +1,6 @@
 import os
 import requests
+import threading
 from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
@@ -89,4 +90,11 @@ application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
     application.update_queue.put(update)
-    return
+    return "ok"
+
+def run_bot():
+    application.run_async()
+
+if __name__ == "__main__":
+    threading.Thread(target=run_bot).start()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
