@@ -1,13 +1,9 @@
 import os
 import requests
-import threading
-from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
-app = Flask(__name__)
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN") or "8236020654:AAEpoQaAie7VvRGRaWVqaY0pi4L3BOrZMT0"
 SHAZAM_API_KEY = os.getenv("SHAZAM_API_KEY")
 CHANNEL_ID = "@gamerenterchannel"
 
@@ -80,21 +76,18 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_photo(photo=song["image"], caption=msg)
         else:
             await update.message.reply_text("متأسفانه نتونستم آهنگ رو تشخیص بدم 😔 لطفاً دوباره امتحان کن.")
-    except:
+    except Exception as e:
+        print("Error:", e)
         await update.message.reply_text("یه مشکلی پیش اومد موقع دریافت ویس. لطفاً دوباره امتحان کن.")
 
 application.add_handler(CommandHandler("start", handle_start))
 application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
-@app.route(f"/{BOT_TOKEN}", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    application.update_queue.put(update)
-    return "ok"
-
-def run_bot():
-    application.run_async()
-
 if __name__ == "__main__":
-    threading.Thread(target=run_bot).start()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    PORT = int(os.environ.get("PORT", 10000))
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=BOT_TOKEN,
+        webhook_url=f"https://gr-musicfinder.onrender.com/{BOT_TOKEN}"
+    )
