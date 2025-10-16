@@ -1,5 +1,6 @@
 import os
 import requests
+import asyncio
 from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
@@ -88,7 +89,11 @@ application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
-    application.process_update(update)
+
+    async def handle():
+        await application.process_update(update)
+
+    asyncio.run(handle())
     return "ok"
 
 if __name__ == "__main__":
